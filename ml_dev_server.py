@@ -18,7 +18,7 @@ from src.access_jwt import (
     get_current_active_user,
     create_access_token,
     authenticate_user,
-    create_new_password
+    create_new_password,
 )
 
 load_dotenv()
@@ -34,6 +34,7 @@ class App_Name(str, Enum):
     lr_model = "lr_model"
     rf_model = "rf_model"
     lgb_model = "lgb_model"
+
 
 class CalcModel(BaseModel):
     name_model: str
@@ -57,51 +58,56 @@ def get_models_names():
     return MODELS_NAMES
 
 
-# Регистрация и авторизация:
-@app.post("/token")
+# Authentication
+@app.post("/token/", response_model=Token, tags=["Authentication"])
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
-) -> Token:
+):
+    """## Получить токен\n
+    Returns:
+    "access_token": str
+    "token_type": str
+    """
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Неверное имя пользователя или пароль",
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
-    return Token(access_token=access_token, token_type="bearer")
+    return {"access_token": access_token, "token_type": "bearer"}
 
-# идентификация конкретного пользователя
-@app.get("/users/me/", response_model=User)
+
+@app.get("/api/users/me/", response_model=User, tags=["Authentication"])
 async def read_users_me(
     current_user: Annotated[User, Depends(get_current_active_user)]
 ):
+    """## Получить текущего пользователя\n"""
     return current_user
 
 
-@app.get("/users/me/items/")
-async def read_own_items(
-    current_user: Annotated[User, Depends(get_current_active_user)]
-):
-    return [{"item_id": "Foo", "owner": current_user.username}]
+# @app.get("/users/me/items/")
+# async def read_own_items(
+#     current_user: Annotated[User, Depends(get_current_active_user)]
+# ):
+#     return [{"item_id": "Foo", "owner": current_user.username}]
 
 
-@app.get("/pass")
-async def test_get_pass(pass_word: str):
-    return create_new_password(pass_word)
+# @app.get("/pass")
+# async def test_get_pass(pass_word: str):
+#     return create_new_password(pass_word)
 
 
 @app.post("/calculate", response_model=User)
-async def get_prediction(user_data: CalcModel, current_user: Annotated[User, Depends(get_current_active_user)]):
-    
-    return 
-
-
-
+async def get_prediction(
+    user_data: CalcModel,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+):
+    return
 
 
 # Счет пользователя:

@@ -11,10 +11,12 @@ import bcrypt
 from src.models import session
 import src.models
 
-
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 2400
+ACCESS_TOKEN_EXPIRE_MINUTES = 10 * 60
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
 
 class Token(BaseModel):
     access_token: str
@@ -39,10 +41,6 @@ class UserInDB(User):
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-app = FastAPI()
-
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -52,10 +50,25 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
+def get_user_by_login(username):
+    db = (
+        session.query(src.models.User)
+        .filter(src.models.User.username == username)
+        .all()
+    )
+    res = {}
+    res_field = res[db[0].username] = {}
+    res_field["username"] = db[0].username
+    res_field["hashed_password"] = db[0].password
+    res_field["email"] = db[0].email
+    res_field["name"] = db[0].name
+    return res
+
+
 def get_user(username: str):
-    db = session.query(src.models.User).filter(src.models.User.username == username).all()
-    if db[0].username == username:        
-        user_dict = {'username': db[0].username, 'hashed_password': db[0].password}
+    db = get_user_by_login(username)
+    if username in db:
+        user_dict = db[username]
         return UserInDB(**user_dict)
 
 
@@ -63,6 +76,7 @@ def authenticate_user(username: str, password: str):
     user = get_user(username)
     if not user:
         return False
+    # расскоментировать после создания интерфейса administrator
     if not verify_password(password, user.hashed_password):
         return False
     return user
@@ -71,12 +85,20 @@ def authenticate_user(username: str, password: str):
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+
+def verify_token(token: str):
+    try:
+        decoded_data = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return decoded_data
+    except jwt.PyJWTError:
+        return None
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
@@ -108,11 +130,11 @@ async def get_current_active_user(
 
 
 ##############################################
-#Для создания пароля
+# Для создания пароля
 def create_new_password(pass_word: str):
-    hashed = bcrypt.hashpw(pass_word.encode('utf-8'), bcrypt.gensalt())
-    if bcrypt.checkpw(pass_word.encode('utf-8'), hashed):
+    hashed = bcrypt.hashpw(pass_word.encode("utf-8"), bcrypt.gensalt())
+    if bcrypt.checkpw(pass_word.encode("utf-8"), hashed):
         print("It Matches!")
     else:
         print("It Does not Match :(")
-    return hashed    
+    return hashed

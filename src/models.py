@@ -10,7 +10,7 @@ from sqlalchemy import (
     ARRAY,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Session, sessionmaker
 from datetime import datetime
@@ -32,9 +32,10 @@ Base = declarative_base()
 metadata = MetaData()
 engine = create_engine(f"postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{NAME}")
 
-# session = sessionmaker(bind=engine)
-# session = Session()
+# sess = sessionmaker(bind=engine)
+# session = Session(sess)
 session = Session(bind=engine)
+
 
 class User(Base):
     __tablename__ = "users"
