@@ -1,7 +1,7 @@
 from sqlalchemy import (
     create_engine,
     MetaData,
-    Table,
+    Boolean,
     Integer,
     String,
     Column,
@@ -40,13 +40,14 @@ session = Session(bind=engine)
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True)
-    username = Column(String(50), nullable=False, index=True)
+    username = Column(String(50), nullable=False, index=True, unique=True)
     password = Column(String(250), nullable=False)
     email = Column(String(25), nullable=False)
     name = Column(String(20))
     surname = Column(String(20))
     created_on = Column(DateTime())
     updated_on = Column(DateTime())
+    disabled = Column(Boolean)
     user_models = relationship("UserModel")
     credits = relationship("Credit")
 
@@ -119,4 +120,4 @@ class Operation(Base):
 
 # Base.metadata.drop_all(engine)
 
-Base.metadata.create_all(engine)
+# Base.metadata.create_all(engine)

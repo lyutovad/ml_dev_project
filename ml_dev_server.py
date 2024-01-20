@@ -24,8 +24,8 @@ from src.access_jwt import (
 load_dotenv()
 
 MODELS_NAMES = {
-    "lr_model": "inear regression",
-    "rf_model": "random forest",
+    "lr_model": "Linear regression",
+    "rf_model": "Random forest",
     "lgb_model": "LightGBM",
 }
 
@@ -97,9 +97,9 @@ async def read_users_me(
 #     return [{"item_id": "Foo", "owner": current_user.username}]
 
 
-# @app.get("/pass")
-# async def test_get_pass(pass_word: str):
-#     return create_new_password(pass_word)
+@app.get("/pass")
+async def test_get_pass(pass_word: str):
+    return create_new_password(pass_word)
 
 
 @app.post("/calculate", response_model=User)

@@ -51,18 +51,25 @@ def get_password_hash(password):
 
 
 def get_user_by_login(username):
+    user_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not find username"
+    )
     db = (
         session.query(src.models.User)
         .filter(src.models.User.username == username)
         .all()
     )
-    res = {}
-    res_field = res[db[0].username] = {}
-    res_field["username"] = db[0].username
-    res_field["hashed_password"] = db[0].password
-    res_field["email"] = db[0].email
-    res_field["name"] = db[0].name
-    return res
+    if db:
+        res = {}
+        res_field = res[db[0].username] = {}
+        res_field["id"] = db[0].id
+        res_field["username"] = db[0].username
+        res_field["hashed_password"] = db[0].password
+        res_field["email"] = db[0].email
+        res_field["name"] = db[0].name
+        return res
+    else:
+        raise user_exception
 
 
 def get_user(username: str):
