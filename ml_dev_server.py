@@ -6,9 +6,6 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from typing import Annotated, Union
 from enum import Enum
-from src.preprocess import Dataset
-from src.lgb_server import LgbInferer
-from src.lr_server import Inferer
 import os
 import bcrypt
 from dotenv import load_dotenv
@@ -26,7 +23,13 @@ from src.access_jwt import (
     authenticate_user,
     create_new_password,
 )
-from src.funks import get_cost, get_credits
+from src.funks import (
+    get_cost,
+    get_credits,
+    validate_user,
+    validate_data,
+    make_prediction,
+)
 
 load_dotenv()
 
@@ -46,6 +49,7 @@ class App_Name(str, Enum):
 class GetData(BaseModel):
     Years_at_diagnosis: int
     Days_at_diagnosis: int
+    Gender: str
     Race: str
     IDH1: str | None = "MUTATED"
     TP53: str | None = "MUTATED"
@@ -110,6 +114,10 @@ path_models = os.getenv("PATH_MODELS")
 async def get_data(
     new_user: UserData,
 ):
+    """## Создать нового пользователя\n
+    Returns:
+    "mes": str
+    """
     res = (
         session.query(src.models.User)
         .filter(src.models.User.username == new_user.username)
@@ -182,19 +190,20 @@ async def read_users_me(
     return current_user
 
 
-# @app.get("/pass", tags=["Authentication"])
-# async def test_get_pass(pass_word: str):
-#     return create_new_password(pass_word)
-
-
 @app.post("/get_data", response_model=Union[IdRecording, Message], tags=["Data"])
 async def get_data(
     user_data: GetData,
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
+    """## Получить данные для предсказания и номер модели\n
+    Проверить, хватает ли средств \n
+    Returns:
+    "id": int |  "mes": str
+    """
     data_line = Prediction(
         Years_at_diagnosis=user_data.Years_at_diagnosis,
         Days_at_diagnosis=user_data.Days_at_diagnosis,
+        Gender=user_data.Gender,
         Race=user_data.Race,
         IDH1=user_data.IDH1,
         TP53=user_data.TP53,
@@ -239,13 +248,36 @@ async def get_data(
         return Message(mes="Не хватает средств")
 
 
-@app.post("/calculate", response_model=Result, tags=["Data"])
+@app.post("/calculate", response_model=Union[IdRecording, Message], tags=["Data"])
 async def get_data(
     dataid: IdRecording,
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
-    # передать еще id пользователя, проверить, что он существует, что имя совпадает и что id записи, которую надо предсказать тоже существует, дальше вызвать блок расссчета
-    pass
+    """## Выполнить расчеты, вернуть предсказание\n
+    Проверить, существует ли пользователь\n
+    Существует ли запись для предсказания, не отменена ли ранее\n
+    Проверить, хватает ли средств\n
+    Вызвать блок рассчета
+    Returns:
+    "mes": str
+    """
+    user = validate_user(current_user.id, current_user.username)
+    data = validate_data(dataid.id)
+    data_line = session.query(Prediction).get(dataid.id)
+    cost = get_cost(data_line.model_id)
+    credits = get_credits(current_user.id)
+    money = 1 if credits > cost else 0
+    if user + data + money == 3:
+        result = make_prediction(dataid.id)
+        return Message(mes=result)
+
+    else:
+        if not user:
+            return Message(mes="Пользователь не найден")
+        elif not data:
+            return Message(mes="Данные не найдены")
+        else:
+            return Message(mes="Не хватает денег на операцию")
 
 
 @app.put("/reject/{data_id}", response_model=Message, tags=["Data"])
@@ -253,6 +285,11 @@ async def get_data(
     data_id: int,
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
+    """
+    ## Отказ от предсказания\n
+    При отказе записать в результат предсказания -999
+    "mes": str
+    """
     data = session.query(Prediction).get(data_id)
     data.result = -999
     session.add(data)
@@ -264,8 +301,48 @@ async def get_data(
 async def get_data(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
+    """
+    ## История действий пользователя по диапазону дат\n
+    """
     # вывести по диапазону дат историю
     pass
+
+
+@app.post("/deposit", response_model=IdRecording, tags=["User"])
+async def get_data(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+):
+    """
+    ## Получение баланса пользователя\n
+    Returns:
+    "credits": int
+    """
+    credits = get_credits(current_user.id)
+    return IdRecording(id=credits)
+
+
+@app.get("/refill", response_model=Message, tags=["User"])
+async def get_data(
+    credits: int,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+):
+    """
+    ## Пополнение баланса пользователя\n
+    Returns:
+    "mes": str
+    """
+    refill = Credit(user_id=current_user.id, operation_type_id=1, amount=credits)
+    session.add(refill)
+    session.commit()
+
+    result = get_credits(current_user.id)
+    message = f"Баланс пополнен. Текущий баланс = {result} credits"
+    return Message(mes=message)
+
+
+# @app.get("/pass", tags=["Authentication"])
+# async def test_get_pass(pass_word: str):
+#     return create_new_password(pass_word)
 
 
 # @app.get("/users/me/items/")
@@ -277,10 +354,3 @@ async def get_data(
 # Счет пользователя:
 # POST /api/deposit - Позволяет пользователю внести средства на счет.
 # GET /api/ deposit - Возвращает текущий баланс счета пользователя (как разницу между всеми пополнениями и списаниями).
-
-# Получение предсказания:
-# GET /api/predict/{uid} – идентификатор предикта, который вернет uid предикта юзера
-# POST /api/{name_model}/predict - Принимает данные от пользователя и возвращает предсказание в соответствии с выбранной моделью.
-
-# История операций пользователя:
-# GET /api/user_actions_history - Возвращает историю операций и действий пользователя, такие как пополнения счета, выбор моделей, списание средств и другие важные события.

@@ -66,6 +66,7 @@ class Prediction(Base):
     id = Column(Integer, primary_key=True)
     Years_at_diagnosis = Column(Integer, nullable=False)
     Days_at_diagnosis = Column(Integer, nullable=False)
+    Gender = Column(String(6), nullable=False)
     Race = Column(String(20), nullable=False)
     IDH1 = Column(String(11), nullable=False, default="NOT_MUTATED")
     TP53 = Column(String(11), nullable=False, default="NOT_MUTATED")
