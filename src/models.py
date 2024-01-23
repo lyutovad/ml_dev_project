@@ -32,9 +32,9 @@ Base = declarative_base()
 metadata = MetaData()
 engine = create_engine(f"postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{NAME}")
 
-# sess = sessionmaker(bind=engine)
-# session = Session(sess)
 session = Session(bind=engine)
+# Session = sessionmaker(bind=engine)
+# session = Session()
 
 
 class User(Base):
@@ -58,12 +58,12 @@ class Model(Base):
     name = Column(String(30), nullable=False)
     price = Column(Integer, nullable=False)
     user_models = relationship("UserModel")
+    data_prediction = relationship("Prediction")
 
 
 class Prediction(Base):
     __tablename__ = "data_prediction"
     id = Column(Integer, primary_key=True)
-    prediction = Column(Integer)
     Years_at_diagnosis = Column(Integer, nullable=False)
     Days_at_diagnosis = Column(Integer, nullable=False)
     Race = Column(String(20), nullable=False)
@@ -88,7 +88,7 @@ class Prediction(Base):
     FAT4 = Column(String(11), nullable=False, default="NOT_MUTATED")
     PDGFRA = Column(String(11), nullable=False, default="NOT_MUTATED")
     result = Column(Integer())
-    model = Column(ARRAY(Integer))
+    model_id = Column(ForeignKey("models.id"))
     user_models = relationship("UserModel")
 
 
@@ -121,3 +121,25 @@ class Operation(Base):
 # Base.metadata.drop_all(engine)
 
 # Base.metadata.create_all(engine)
+
+
+# model_line1 = Model(name="Linear regression", price=5)
+# model_line2 = Model(name="Random forest", price=10)
+# model_line3 = Model(name="LightGBM", price=15)
+# session.add_all([model_line1, model_line2, model_line3])
+# session.commit()
+
+
+# op_line1 = Operation(type="plus")
+# op_line2 = Operation(type="minus")
+# op_line3 = Operation(type="start")
+# session.add_all([op_line1, op_line2, op_line3])
+# session.commit()
+
+
+# pas = session.query(User).filter(User.username == "string").all()
+# passw = pas[0].password
+# hex_string = passw[2:]
+# byte_data = bytes.fromhex(hex_string)
+# decoded_pass = byte_data.decode("ascii")
+# print(decoded_string())

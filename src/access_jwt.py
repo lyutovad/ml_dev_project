@@ -42,6 +42,13 @@ class UserInDB(User):
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+def decode_pass(pwd):
+    hex_string = pwd[2:]
+    byte_data = bytes.fromhex(hex_string)
+    decoded_pass = byte_data.decode("ascii")
+    return decoded_pass
+
+
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -64,7 +71,7 @@ def get_user_by_login(username):
         res_field = res[db[0].username] = {}
         res_field["id"] = db[0].id
         res_field["username"] = db[0].username
-        res_field["hashed_password"] = db[0].password
+        res_field["hashed_password"] = decode_pass(db[0].password)
         res_field["email"] = db[0].email
         res_field["name"] = db[0].name
         return res
