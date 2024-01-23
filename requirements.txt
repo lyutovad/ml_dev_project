@@ -1,19 +1,21 @@
+bcrypt==4.1.2
 cloudpickle==3.0.0
 fastapi-jwt-auth==0.5.0
 fastapi==0.109.0
 lightgbm==4.2.0
 numpy==1.26.3
 pandas==2.1.4
+passlib==1.7.4
 psycopg2-binary==2.9.9
 pycparser==2.21
 pydantic==2.5.3
 python-dateutil==2.8.2
 python-dotenv==0.20.0
 python-jose==3.3.0
+python-multipart==0.0.6
+# redis==5.0.1
+rq==1.15.1
 scipy==1.11.4
 SQLAlchemy==2.0.25
 typing_extensions==4.9.0
 uvicorn==0.26.0
-python-multipart==0.0.6
-passlib==1.7.4
-bcrypt==4.1.2

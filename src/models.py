@@ -7,13 +7,10 @@ from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
-    ARRAY,
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Session, sessionmaker
-from datetime import datetime
 import os
 from dotenv import load_dotenv
 
@@ -100,7 +97,6 @@ class UserModel(Base):
     model_id = Column(ForeignKey("models.id"))
     data_id = Column(ForeignKey("data_prediction.id"))
     used_on = Column(DateTime())
-    uid = Column(UUID(as_uuid=True), nullable=False)
 
 
 class Credit(Base):
@@ -109,7 +105,7 @@ class Credit(Base):
     user_id = Column(ForeignKey("users.id"))
     operation_type_id = Column(ForeignKey("operation_type.id"))
     amount = Column(Integer(), nullable=False)
-    uid = Column(UUID(as_uuid=True))
+    data_prediction_id = Column(ForeignKey("data_prediction.id"))
 
 
 class Operation(Base):
