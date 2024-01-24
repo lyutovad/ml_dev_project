@@ -120,9 +120,9 @@ class Operation(Base):
 # Base.metadata.create_all(engine)
 
 
-# model_line1 = Model(name="Linear regression", price=5)
-# model_line2 = Model(name="Random forest", price=10)
-# model_line3 = Model(name="LightGBM", price=15)
+# model_line1 = Model(name="model_lr.pkl", price=5)
+# model_line2 = Model(name="model_rf.pkl", price=10)
+# model_line3 = Model(name="lgb.model", price=15)
 # session.add_all([model_line1, model_line2, model_line3])
 # session.commit()
 

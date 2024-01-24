@@ -35,26 +35,44 @@ FEATURES = [
 ]
 
 
-class Dataset:
-    def __init__(self, df):
-        self.df = df
+# class DataDf:
+#     def __init__(self, df):
+#         self.df = df
 
-    def preprocess(self):
-        self.df["Days_at_diagnosis"] = (
-            self.df.Years_at_diagnosis * 365
-            + self.df.Years_at_diagnosis // 4
-            + self.df.Days_at_diagnosis
-        )
-        self.df.drop("Years_at_diagnosis", axis=1, inplace=True)
-        self.df.Gender = self.df.Gender.map(MAP_GEN)
-        self.df.Race = self.df.Race.map(MAP_RACE)
-        for f in FEATURES:
-            self.df[f"{f}"] = self.df[f"{f}"].map(MAP_FEAT)
-        return self.df
+#     def preprocess(self):
+#         self.df["Days_at_diagnosis"] = (
+#             self.df.Years_at_diagnosis * 365
+#             + self.df.Years_at_diagnosis // 4
+#             + self.df.Days_at_diagnosis
+#         )
+#         self.df.drop("Years_at_diagnosis", axis=1, inplace=True)
+#         self.df.Gender = self.df.Gender.map(MAP_GEN)
+#         self.df.Race = self.df.Race.map(MAP_RACE)
+#         for f in FEATURES:
+#             self.df[f"{f}"] = self.df[f"{f}"].map(MAP_FEAT)
+#         return self.df
 
-    def scaling(self, diag_mean=DIAG_MEAN, diag_std=DIAG_STD):
-        X_scaled = self.df.copy()
-        X_scaled["Days_at_diagnosis"] = (
-            X_scaled.Days_at_diagnosis - diag_mean
-        ) / diag_std
-        return X_scaled
+#     def scaling(self, diag_mean=DIAG_MEAN, diag_std=DIAG_STD):
+#         X_scaled = self.df.copy()
+#         X_scaled["Days_at_diagnosis"] = (
+#             X_scaled.Days_at_diagnosis - diag_mean
+#         ) / diag_std
+#         return X_scaled
+
+
+def preprocess(df):
+    df["Days_at_diagnosis"] = (
+        df.Years_at_diagnosis * 365 + df.Years_at_diagnosis // 4 + df.Days_at_diagnosis
+    )
+    df.drop("Years_at_diagnosis", axis=1, inplace=True)
+    df.Gender = df.Gender.map(MAP_GEN)
+    df.Race = df.Race.map(MAP_RACE)
+    for f in FEATURES:
+        df[f"{f}"] = df[f"{f}"].map(MAP_FEAT)
+    return df
+
+
+def scaling(df, diag_mean=DIAG_MEAN, diag_std=DIAG_STD):
+    X_scaled = df.copy()
+    X_scaled["Days_at_diagnosis"] = (X_scaled.Days_at_diagnosis - diag_mean) / diag_std
+    return X_scaled

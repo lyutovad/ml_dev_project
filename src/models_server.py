@@ -1,34 +1,34 @@
 import os
 import cloudpickle
 import lightgbm as lgb
+import joblib
 
+# import sklearn
 path = "src/models/"
 
 
 class Inferer:
-    path = "src/models/"
-
     def __init__(
         self,
         model: str,
     ):
         model_file = os.path.join(path, model)
-        with open(model_file, "rb") as file:
-            self.inferer = cloudpickle.load(file)
+        self.inferer = joblib.load(open(model_file, "rb"))
 
     def infer(self, df) -> int:
         prediction = self.inferer.predict(df)
-        return int(prediction)
+        return prediction
 
 
 class LgbInferer:
     def __init__(
-        self,        
+        self,
         model: str,
     ):
-        model_file = os.path.join(model)
-        self.inferer = lgb.load(filename=model_file)
+        model_file = os.path.join(path, model)
+        self.inferer = lgb.Booster(model_file=model_file)
 
     def infer(self, df) -> int:
         prediction = self.inferer.predict(df)
-        return int(prediction)
+        prediction = 1 if prediction > 0.5 else 0
+        return prediction

@@ -1,5 +1,5 @@
 import os
-from datetime import timedelta
+from datetime import timedelta, datetime
 from fastapi import FastAPI
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -9,9 +9,6 @@ from enum import Enum
 import os
 import bcrypt
 from dotenv import load_dotenv
-
-from datetime import datetime
-import uuid
 import src.models
 from src.models import session, Prediction, UserModel, Credit
 from src.access_jwt import (
@@ -29,6 +26,7 @@ from src.funks import (
     validate_user,
     validate_data,
     make_prediction,
+    record_calculation,
 )
 
 load_dotenv()
@@ -124,7 +122,7 @@ async def get_data(
         .all()
     )
     if res:
-        mes = Message(mes="Такой пользоватьль уже существует")
+        mes = Message(mes="Такой пользователь уже существует")
         return mes
     else:
         hashed_passw = bcrypt.hashpw(
@@ -234,7 +232,6 @@ async def get_data(
         user_id=current_user.id,
         model_id=user_data.model_id,
         data_id=data_line.id,
-        uid=uuid.uuid1(),
     )
     session.add(user_model_line)
     session.commit()
@@ -268,8 +265,12 @@ async def get_data(
     credits = get_credits(current_user.id)
     money = 1 if credits > cost else 0
     if user + data + money == 3:
-        result = make_prediction(dataid.id)
-        return Message(mes=result)
+        res_str, result = make_prediction(dataid.id)
+        transact = record_calculation(dataid.id, current_user.id, cost, result)
+        if transact:
+            return Message(mes=res_str)
+        else:
+            return Message(mes="Ошибка выполнения")
 
     else:
         if not user:
