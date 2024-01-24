@@ -1,10 +1,11 @@
 import pandas as pd
 from datetime import datetime
+from fastapi import HTTPException
 from src.models import session, Prediction, User, Credit, Model, UserModel
 from src.preprocess import preprocess, scaling
-from src.models_server import Inferer, LgbInferer
+from src.models_server import LgbInferer, model_pred
 
-mapping = {0: "NOT_MUTATED", 1: "MUTATED"}
+mapping = {0: "LGG", 1: "GBM"}
 
 
 def get_credits(userid):
@@ -26,12 +27,18 @@ def get_cost(modelid):
 
 def validate_user(id, username):
     user = session.query(User).get(id)
-    return True if user.username == username else False
+    if len(user) and user.username == username:
+        return 1
+    else:
+        raise HTTPException(status_code=422, detail="Пользователь не найден")
 
 
 def validate_data(id):
     data = session.query(Prediction).get(id)
-    return False if not data or data.result == -999 else True
+    if data.result != -999:
+        return 1
+    else:
+        raise HTTPException(status_code=422, detail="Запись не найдена")
 
 
 def get_models_name(id):
@@ -75,8 +82,7 @@ def make_prediction(id):
         df = scaling(df)
     model = get_models_name(data.model_id)
     if data.model_id in [1, 2]:
-        inferer = Inferer(model=model)
-        res = inferer.infer(df)
+        res = model_pred(model, df)
     else:
         inferer = LgbInferer(model=model)
         res = inferer.infer(df)
@@ -88,7 +94,6 @@ def record_calculation(dataid, userid, cost, res):
     credits = Credit(
         user_id=userid, operation_type_id=2, amount=cost, data_prediction_id=dataid
     )
-
     try:
         prediction.result = res
         session.add(prediction)
@@ -98,6 +103,6 @@ def record_calculation(dataid, userid, cost, res):
         session.add(credits)
         session.commit()
         return 1
-    except RuntimeError as e:
+    except Exception as e:
         session.rollback()
         return 0

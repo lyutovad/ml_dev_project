@@ -34,6 +34,31 @@ FEATURES = [
     "PDGFRA",
 ]
 
+ORDER = [
+    "Gender",
+    "Race",
+    "IDH1",
+    "TP53",
+    "ATRX",
+    "PTEN",
+    "EGFR",
+    "CIC",
+    "MUC16",
+    "PIK3CA",
+    "NF1",
+    "PIK3R1",
+    "FUBP1",
+    "RB1",
+    "NOTCH1",
+    "BCOR",
+    "CSMD3",
+    "SMARCA4",
+    "GRIN2A",
+    "IDH2",
+    "FAT4",
+    "PDGFRA",
+    "Days_at_diagnosis",
+]
 
 # class DataDf:
 #     def __init__(self, df):
@@ -69,7 +94,7 @@ def preprocess(df):
     df.Race = df.Race.map(MAP_RACE)
     for f in FEATURES:
         df[f"{f}"] = df[f"{f}"].map(MAP_FEAT)
-    return df
+    return df[ORDER]
 
 
 def scaling(df, diag_mean=DIAG_MEAN, diag_std=DIAG_STD):

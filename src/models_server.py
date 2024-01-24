@@ -3,21 +3,20 @@ import cloudpickle
 import lightgbm as lgb
 import joblib
 
-# import sklearn
 path = "src/models/"
 
 
-class Inferer:
-    def __init__(
-        self,
-        model: str,
-    ):
-        model_file = os.path.join(path, model)
-        self.inferer = joblib.load(open(model_file, "rb"))
+# class Inferer:
+#     def __init__(
+#         self,
+#         model: str,
+#     ):
+#         model_file = os.path.join(path, model)
+#         self.inferer = joblib.load(open(model_file, "rb"))
 
-    def infer(self, df) -> int:
-        prediction = self.inferer.predict(df)
-        return prediction
+#     def infer(self, df) -> int:
+#         prediction = self.inferer.predict(df)
+#         return prediction
 
 
 class LgbInferer:
@@ -32,3 +31,10 @@ class LgbInferer:
         prediction = self.inferer.predict(df)
         prediction = 1 if prediction > 0.5 else 0
         return prediction
+
+
+def model_pred(model, df):
+    model_file = os.path.join(path, model)
+    inferer = joblib.load(open(model_file, "rb"))
+    prediction = inferer.predict(df)
+    return int(prediction[0])

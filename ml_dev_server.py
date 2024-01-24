@@ -4,11 +4,13 @@ from fastapi import FastAPI
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
+from fastapi import HTTPException
 from typing import Annotated, Union
 from enum import Enum
 import os
 import bcrypt
 from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
 import src.models
 from src.models import session, Prediction, UserModel, Credit
 from src.access_jwt import (
@@ -103,6 +105,14 @@ app = FastAPI(
     title="Классификация глиомы мозга",
     version="0.0.1",
     description="""""",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 path_models = os.getenv("PATH_MODELS")
@@ -258,27 +268,25 @@ async def get_data(
     Returns:
     "mes": str
     """
-    user = validate_user(current_user.id, current_user.username)
-    data = validate_data(dataid.id)
+
+    validate_user(current_user.id, current_user.username)
+    data_line = session.query(Prediction).get(id)
+    if len(data_line):
+        data = validate_data(dataid.id)
+    else:
+        raise HTTPException(status_code=422, detail="Запись не найдена")
     data_line = session.query(Prediction).get(dataid.id)
     cost = get_cost(data_line.model_id)
     credits = get_credits(current_user.id)
-    money = 1 if credits > cost else 0
-    if user + data + money == 3:
+    if credits > cost:
         res_str, result = make_prediction(dataid.id)
         transact = record_calculation(dataid.id, current_user.id, cost, result)
         if transact:
             return Message(mes=res_str)
         else:
             return Message(mes="Ошибка выполнения")
-
     else:
-        if not user:
-            return Message(mes="Пользователь не найден")
-        elif not data:
-            return Message(mes="Данные не найдены")
-        else:
-            return Message(mes="Не хватает денег на операцию")
+        raise HTTPException(status_code=422, detail="Не хватает денег на операцию")
 
 
 @app.put("/reject/{data_id}", response_model=Message, tags=["Data"])
@@ -351,7 +359,3 @@ async def get_data(
 #     current_user: Annotated[User, Depends(get_current_active_user)]
 # ):
 #     return [{"item_id": "Foo", "owner": current_user.username}]
-
-# Счет пользователя:
-# POST /api/deposit - Позволяет пользователю внести средства на счет.
-# GET /api/ deposit - Возвращает текущий баланс счета пользователя (как разницу между всеми пополнениями и списаниями).
