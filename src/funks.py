@@ -27,7 +27,7 @@ def get_cost(modelid):
 
 def validate_user(id, username):
     user = session.query(User).get(id)
-    if len(user) and user.username == username:
+    if user and user.username == username:
         return 1
     else:
         raise HTTPException(status_code=422, detail="Пользователь не найден")

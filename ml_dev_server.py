@@ -118,7 +118,7 @@ app.add_middleware(
 path_models = os.getenv("PATH_MODELS")
 
 
-@app.post("/new_user", response_model=Message, tags=["User"])
+@app.post("/new_user/", response_model=Message, tags=["User"])
 async def get_data(
     new_user: UserData,
 ):
@@ -161,7 +161,7 @@ async def get_data(
         return response_message
 
 
-@app.get("/models_names", tags=["Data"])
+@app.get("/models_names/", tags=["Data"])
 def get_models_names():
     return MODELS_NAMES
 
@@ -198,7 +198,7 @@ async def read_users_me(
     return current_user
 
 
-@app.post("/get_data", response_model=Union[IdRecording, Message], tags=["Data"])
+@app.post("/get_data/", response_model=Union[IdRecording, Message], tags=["Data"])
 async def get_data(
     user_data: GetData,
     current_user: Annotated[User, Depends(get_current_active_user)],
@@ -250,12 +250,12 @@ async def get_data(
     credits = get_credits(current_user.id)
 
     if cost < credits:
-        return IdRecording(id=data_line.id)
+        return Message(mes=f"Средств достаточно, данные записаны. Номер записи {data_line.id}.")
     else:
         return Message(mes="Не хватает средств")
 
 
-@app.post("/calculate", response_model=Union[IdRecording, Message], tags=["Data"])
+@app.post("/calculate/", response_model=Union[IdRecording, Message], tags=["Data"])
 async def get_data(
     dataid: IdRecording,
     current_user: Annotated[User, Depends(get_current_active_user)],
@@ -270,8 +270,8 @@ async def get_data(
     """
 
     validate_user(current_user.id, current_user.username)
-    data_line = session.query(Prediction).get(id)
-    if len(data_line):
+    data_line = session.query(Prediction).get(dataid.id)
+    if data_line:
         data = validate_data(dataid.id)
     else:
         raise HTTPException(status_code=422, detail="Запись не найдена")
@@ -282,14 +282,14 @@ async def get_data(
         res_str, result = make_prediction(dataid.id)
         transact = record_calculation(dataid.id, current_user.id, cost, result)
         if transact:
-            return Message(mes=res_str)
+            return Message(mes=f'Опухоль классифицирована как {res_str}')
         else:
             return Message(mes="Ошибка выполнения")
     else:
         raise HTTPException(status_code=422, detail="Не хватает денег на операцию")
 
 
-@app.put("/reject/{data_id}", response_model=Message, tags=["Data"])
+@app.put("/reject/{data_id}/", response_model=Message, tags=["Data"])
 async def get_data(
     data_id: int,
     current_user: Annotated[User, Depends(get_current_active_user)],
@@ -303,10 +303,10 @@ async def get_data(
     data.result = -999
     session.add(data)
     session.commit()
-    return Message(mes="Запрос отменен")
+    return Message(mes="Рассчет отменен")
 
 
-@app.post("/history", response_model=History, tags=["User"])
+@app.post("/history/", response_model=History, tags=["User"])
 async def get_data(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
@@ -317,7 +317,7 @@ async def get_data(
     pass
 
 
-@app.post("/deposit", response_model=IdRecording, tags=["User"])
+@app.post("/deposit/", response_model=IdRecording, tags=["User"])
 async def get_data(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
@@ -330,9 +330,9 @@ async def get_data(
     return IdRecording(id=credits)
 
 
-@app.get("/refill", response_model=Message, tags=["User"])
+@app.post("/refill/", response_model=Message, tags=["User"])
 async def get_data(
-    credits: int,
+    credits: IdRecording,
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
@@ -340,10 +340,9 @@ async def get_data(
     Returns:
     "mes": str
     """
-    refill = Credit(user_id=current_user.id, operation_type_id=1, amount=credits)
+    refill = Credit(user_id=current_user.id, operation_type_id=1, amount=credits.id)
     session.add(refill)
     session.commit()
-
     result = get_credits(current_user.id)
     message = f"Баланс пополнен. Текущий баланс = {result} credits"
     return Message(mes=message)

@@ -52,7 +52,7 @@ class User(Base):
 class Model(Base):
     __tablename__ = "models"
     id = Column(Integer, primary_key=True)
-    name = Column(String(30), nullable=False)
+    name = Column(String(35), nullable=False)
     price = Column(Integer, nullable=False)
     user_models = relationship("UserModel")
     data_prediction = relationship("Prediction")
@@ -64,7 +64,7 @@ class Prediction(Base):
     Years_at_diagnosis = Column(Integer, nullable=False)
     Days_at_diagnosis = Column(Integer, nullable=False)
     Gender = Column(String(6), nullable=False)
-    Race = Column(String(20), nullable=False)
+    Race = Column(String(30), nullable=False)
     IDH1 = Column(String(11), nullable=False, default="NOT_MUTATED")
     TP53 = Column(String(11), nullable=False, default="NOT_MUTATED")
     ATRX = Column(String(11), nullable=False, default="NOT_MUTATED")
@@ -120,8 +120,8 @@ class Operation(Base):
 # Base.metadata.create_all(engine)
 
 
-# model_line1 = Model(name="model_lr.pkl", price=5)
-# model_line2 = Model(name="model_rf.pkl", price=10)
+# model_line1 = Model(name="model_lr.sav", price=5)
+# model_line2 = Model(name="model_rf.sav", price=10)
 # model_line3 = Model(name="lgb.model", price=15)
 # session.add_all([model_line1, model_line2, model_line3])
 # session.commit()
@@ -132,11 +132,3 @@ class Operation(Base):
 # op_line3 = Operation(type="start")
 # session.add_all([op_line1, op_line2, op_line3])
 # session.commit()
-
-
-# pas = session.query(User).filter(User.username == "string").all()
-# passw = pas[0].password
-# hex_string = passw[2:]
-# byte_data = bytes.fromhex(hex_string)
-# decoded_pass = byte_data.decode("ascii")
-# print(decoded_string())
